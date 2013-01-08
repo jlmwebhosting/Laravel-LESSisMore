@@ -2,7 +2,7 @@
 
 Special thanks to [leafo](https://github.com/leafo) for [lessphp](https://github.com/leafo/lessphp) and also [joecwallace](https://github.com/joecwallace) for [laraveless](https://github.com/joecwallace/lessphp-laravel) upon which [lessismore](https://github.com/rhukster/Laravel-LESSisMore) is based.
 
-`LESSisMore` is a bundle for the [Laravel PHP Framework](http://laravel.com/) that builds on `laraveless` by utilizing the latest version of `lessphp` and provides several new features.
+`LESSisMore` is a bundle for the [Laravel PHP Framework](http://laravel.com/) that builds on `laraveless` by utilizing the latest version of `lessphp` and provides several new features such as smart compile only when LESS files or config options have been modified, compressed output, injectable LESS variables + more...
 
 ### Key Features
 
@@ -13,6 +13,7 @@ Special thanks to [leafo](https://github.com/leafo) for [lessphp](https://github
 * Will take into account nested and `@import`'ed LESS files and automatically recompile if any single file changes
 * Will automatically recompile if you make a change to the configuration options
 * Takes advantage of Larvel's built-in cache system
+* Currently using **lessphp** version **0.3.8**
 
 ### Quick Start
 
@@ -160,5 +161,15 @@ Of course with `LESSisMore`'s smart compilation capability, the CSS files would 
 
 ### Force Recompile
 
-If you hae the need you can force compilation on every request by setting the `recompile` setting to `true`.  This is not really advised but the option is there if you need it.
+If you have the need you can force compilation on every request by setting the `recompile` setting to `true`.  This is not really advised but the option is there if you need it.
 
+# Technical Notes
+
+The logic in `LESSisMore` utilizes the Laravel cache system to store a recent serialized copy of each of the compiled files and also the configuration data.  These files are used to determine if anything has changed between runs.  If for some reason your get into a state where you think the compiler should recompile and it does not, just delete or clear the Laravel cache, and it will be forced to re-run on the next page load. The entries are prefixed with `less-` as you can see in the example below:
+
+	less-7b970ea0f54bf36d2258802e8e109ee5
+	less-9d610ad27a4caf3a762c4dd7eae064a8
+	less-config
+	less-fef1984f647cea8443ef978b2e546375
+
+Cheers!

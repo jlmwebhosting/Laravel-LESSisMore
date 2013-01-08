@@ -1,96 +1,164 @@
-# lessphp v0.3.8
-### <http://leafo.net/lessphp>
+# LESSisMore : Advanced LESS compiler for Laravel
 
-[![Build Status](https://secure.travis-ci.org/leafo/lessphp.png)](http://travis-ci.org/leafo/lessphp)
+Special thanks to [leafo](https://github.com/leafo) for [lessphp](https://github.com/leafo/lessphp) and also [joecwallace](https://github.com/joecwallace) for [laraveless](https://github.com/joecwallace/lessphp-laravel) upon which [lessismore](https://github.com/rhukster/Laravel-LESSisMore) is based.
 
-`lessphp` is a compiler for LESS written in PHP. The documentation is great,
-so check it out: <http://leafo.net/lessphp/docs/>.
+`LESSisMore` is a bundle for the [Laravel PHP Framework](http://laravel.com/) that builds on `laraveless` by utilizing the latest version of `lessphp` and provides several new features.
 
-Here's a quick tutorial:
+### Key Features
 
-### How to use in your PHP project
+* Utilizes lessphp's built-in smart compile option for automatically compiling LESS files when they are modified
+* Ability to set formatter and produced compressed CSS output
+* Option to retain CSS comments in compiled code
+* Ability to set LESS variables from configuration for more dynamic generated CSS
+* Will take into account nested and `@import`'ed LESS files and automatically recompile if any single file changes
+* Will automatically recompile if you make a change to the configuration options
+* Takes advantage of Larvel's built-in cache system
 
-The only file required is `lessc.inc.php`, so copy that to your include directory.
+### Quick Start
 
-The typical flow of **lessphp** is to create a new instance of `lessc`,
-configure it how you like, then tell it to compile something using one built in
-compile methods.
+1. Install the bundle
 
-The `compile` method compiles a string of LESS code to CSS.
+        php artisan bundle:install lessismore
 
-```php
-<?php
-require "lessc.inc.php";
+1. Add it to your application's `bundles.php`
 
-$less = new lessc;
-echo $less->compile(".block { padding: 3 + 4px }");
-```
+        return array(
+            'lessismore' => array(
+            	'auto' => true,
+            ),
+        );
 
-The `compileFile` method reads and compiles a file. It will either return the
-result or write it to the path specified by an optional second argument.
+1. Create `application/config/less.php`
 
-```php
-<?php
-echo $less->compileFile("input.less");
-```
+        return array(
+            'directories' => array(
+                '/your/less/path' => '/your/css/path',
+                ...
+            ),
+            'files' => array(
+            	'/your/less/file.less' => '/your/css/file.css',
+                ...
+            ),
+            'snippets' => array(
+            	'#custom_id { a {color:red;} }' => '/your/snippet/file.css',
+                ...
+            ),
+            'formatter' => 'compressed',
+    		'preserveComments' => false,
+		    'variables' => array(
+		    	'color' => 'red',
+		    	'base' 	=> '960px',
+		    ),
+		    'recompile' => false,
+		);
 
-The `compileChecked` method is like `compileFile`, but it only compiles if the output
-file doesn't exist or it's older than the input file:
+...
 
-```php
-<?php
-$less->checkedCompile("input.less", "output.css");
-```
+# Configuration Options
 
-If there any problem compiling your code, an exception is thrown with a helpful message:
+All configuration arrays are optional although you must have one of the `directories`, `files` or `snippets` settings or nothing will be compiled.
 
-```php
-<?php
-try {
-  $less->compile("invalid LESS } {");
-} catch (exception $e) {
-  echo "fatal error: " . $e->getMessage();
-}
-```
+### Directories
 
-The `lessc` object can be configured through an assortment of instance methods.
-Some possible configuration options include [changing the output format][1],
-[setting variables from PHP][2], and [controlling the preservation of
-comments][3], writing [custom functions][4] and much more. It's all described
-in [the documentation][0].
+You can use the Directories setting to point to a LESS directory path.  LESSisMore will iterate over the LESS files found in the path and output them to the CSS path provided using the `basename` of each LESS file found. For example if you configured `application/config/less.php` :
 
+    return array(
+    	'directories' => array(
+    		path('app') . 'less' => path('public') . 'css',
+    	),
+    );
 
- [0]: http://leafo.net/lessphp/docs/
- [1]: http://leafo.net/lessphp/docs/#output_formatting
- [2]: http://leafo.net/lessphp/docs/#setting_variables_from_php
- [3]: http://leafo.net/lessphp/docs/#preserving_comments
- [4]: http://leafo.net/lessphp/docs/#custom_functions
+Would result in all files matching `application/less/*.less` (case-insensitive, non-recursive) being compiled to CSS in the `public/css` directory. For example, the file `application/less/test.less` compiles to `public/css/test.css`.
 
+If you want to specify single LESS files or want to specify the output filenames specifically, use the `files` option.
 
-### How to use from the command line
+### Files
 
-An additional script has been included to use the compiler from the command
-line. In the simplest invocation, you specify an input file and the compiled
-css is written to standard out:
+The `files` array is nearly identical to the `directories` array except that you specify individual input LESS files and names of the output compiled CSS files. In `application/config/less.php`:
 
-    $ plessc input.less > output.css
+    return array(
+    	'files' => array(
+    		'files' => array(
+		        path('public') . 'less/custom.less' 				=> path('public') . 'css/custom.css',
+		        path('public') . 'less/bootstrap/bootstrap.less' 	=> path('public') . 'css/bootstrap.css',
+		        path('public') . 'less/bootstrap/responsive.less' 	=> path('public') . 'css/bootstrap-responsive.css',
+		    ),
+    	),
+    );
 
-Using the -r flag, you can specify LESS code directly as an argument or, if 
-the argument is left off, from standard in:
+This will compile 3 less files to their respective output CSS files.  For example, the first entry takes `public/less/custom.less` and compiles it to `public/css/custom.css`.
 
-    $ plessc -r "my less code here"
+**NOTE:** *This even works for complex LESS files such as bootstrap.less that contains many `@import` definitions to other LESS files.*
 
-Finally, by using the -w flag you can watch a specified input file and have it 
-compile as needed to the output file:
+### Snippets
 
-    $ plessc -w input-file output-file
+Snippets are a hold over from `laraveless` and provide the ability to put a chunk of LESS in the configuration and have it output to a CSS file. Once again, in `application/config/less.php`:
 
-Errors from watch mode are written to standard out.
+    return array(
+    	'snippets' => array(
+    		'#content { background: #f00; h1 { color: #0f0; } }' => path('public') . 'css/file.css',
+    	),
+    );
 
-The -f flag sets the [output formatter][1]. For example, to compress the
-output run this:
+That should be pretty self-explanatory.
 
-    $ plessc -f=compressed myfile.less
+### Formatter
 
-For more help, run `plessc --help`
+The `formatter` setting is completely optional, but it provides the ability to set the formatter used when compiling the LESS files.  The available options from lessphp are:
+
+* `lessjs` (default) — Same style used in LESS for JavaScript
+* `compressed` — Compresses all the unrequired whitespace
+* `classic` — lessphp’s original formatter
+
+### Preserve Comments
+
+The `preserveComments` setting takes a `true` or a `false` values and just instructs the LESS compiler whether or not to retain any comments found in the LESS files. Pretty self explanatory.
+
+### Variables
+
+the `variables` setting is pretty handy and darn powerful.  It simply consists of an array of `key => value` pairs that are used by the compiler to replace `@keys` in the LESS files with the provided `value`.  For example, say you application had the ability to be branded based on a form that let you pick colors via a color chooser.  If those colors were then saved in the database you could dynamically inject those values into your LESS and in turn into your compiled CSS files with the following in your `application/config/less.php`:
+
+	// Load the branding data from the database
+	$branding = Branding::find(1);
+
+	return array(
+	    'files' => array(
+	        path('public') . 'less/custom.less' => path('public') . 'css/custom.css',
+	    ),
+	    'variables' => array(
+	    	'header-bg'    => $branding->header_bg,
+	    	'header-text'  => $branding->header_text,
+	        'body-bg'      => $branding->body_bg,
+	        'body-text'    => $branding->body_text,
+	    ),
+	);
+
+This would take the following from your `custom.less` file:
+
+	.header {
+		background: @header-bg;
+		color: @header-text;
+	}
+
+	.body {
+		background: @body-bg;
+		color: @body-text;
+	}
+
+and generate the resulting CSS in your `custom.css` file:
+
+	.header {
+	  background: #333333;
+	  color: #cccccc;
+	}
+	.body {
+	  background: #fefefe;
+	  color: #396e9c;
+	}
+
+Of course with `LESSisMore`'s smart compilation capability, the CSS files would only be re-compiled if you modified the variables in the **Branding** table.
+
+### Force Recompile
+
+If you hae the need you can force compilation on every request by setting the `recompile` setting to `true`.  This is not really advised but the option is there if you need it.
 

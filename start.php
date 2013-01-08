@@ -10,8 +10,7 @@ $force_recompile = false;
 $config = Cache::remember($cacheconf,$newConfig,60*24);
 
 // see if the config's are different, if they are set recompile to true
-$configDiffs = array_diff($config, $newConfig);
-if (!empty($configDiffs)) {
+if ($config !== $newConfig) {
 	// cache this updated cache
 	Cache::forever($cacheconf,$newConfig);
 	// set the force recompile option to be true for this run
@@ -69,9 +68,6 @@ $compile = function($input_file, $output_file, $force_recompile=false) use ($imp
 		if (isset($config['variables'])) {
 			$less->setVariables($config['variables']);
 		}
-
-
-		xdebug_break();
 
 		// set the recompile flag if available
 		if (isset($config['recompile'])) {

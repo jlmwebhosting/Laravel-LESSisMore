@@ -13,7 +13,7 @@ Special thanks to [leafo](https://github.com/leafo) for [lessphp](https://github
 * Will take into account nested and `@import`'ed LESS files and automatically recompile if any single file changes
 * Will automatically recompile if you make a change to the configuration options
 * Takes advantage of Larvel's built-in cache system
-* Currently using **lessphp** version **0.3.8**
+* Currently using **lessphp** version **0.3.9**
 
 ### Quick Start
 
